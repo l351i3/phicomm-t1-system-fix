@@ -1,0 +1,16 @@
+[Unit]
+Description=T1 Bluetooth init watchdog (BCM4345C0 UART firmware download + HCI attach)
+# 无强依赖: hci0 一旦出现, bluetoothd 由 udev(bluetooth.target) 自然拉起并接管
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/t1bt-btinit.sh
+Restart=always
+RestartSec=10
+# 日志走脚本自身写 /var/log/t1bt-btinit.log; 服务 stdout 丢弃
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target

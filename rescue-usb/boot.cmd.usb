@@ -1,0 +1,31 @@
+# T1 USB rescue boot script (source for boot.scr on the rescue USB disk).
+# Sourced by U-Boot from the USB device during the usb boot stage
+# (T1 U-Boot boot_order="usb mmc", tries boot.ini then boot.scr on each device).
+# Reads uEnv.txt / kernel / initrd / dtb from the same device (usb in normal
+# use) and boots it. On any failure no boot is performed and U-Boot simply
+# falls back to the next boot device (eMMC), so a broken rescue disk never
+# blocks normal boot with the disk removed.
+echo "== T1 USB rescue boot =="
+setenv loadaddr "0x44000000"
+if test -z "${devnum}"; then setenv devnum "0"; fi
+if test -e ${devtype} ${devnum} uEnv.txt; then
+    load ${devtype} ${devnum} ${loadaddr} uEnv.txt
+    env import -t ${loadaddr} ${filesize}
+    setenv bootargs ${APPEND}
+    if printenv mac; then
+        setenv bootargs ${bootargs} mac=${mac}
+    elif printenv eth_mac; then
+        setenv bootargs ${bootargs} mac=${eth_mac}
+    elif printenv ethaddr; then
+        setenv bootargs ${bootargs} mac=${ethaddr}
+    fi
+    if load ${devtype} ${devnum} ${kernel_addr_r} ${LINUX}; then
+        if load ${devtype} ${devnum} ${ramdisk_addr_r} ${INITRD}; then
+            if load ${devtype} ${devnum} ${fdt_addr_r} ${FDT}; then
+                fdt addr ${fdt_addr_r}
+                booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
+            fi
+        fi
+    fi
+fi
+echo "USB rescue: boot.scr finished (no boot performed)"

@@ -1,0 +1,103 @@
+From be53dcb672505369aac7734e498ebb9b02211fc5 Mon Sep 17 00:00:00 2001
+From: T1 Kernel Patch Work <patch@local>
+Date: Thu, 8 Oct 2026 21:54:29 +0800
+Subject: [PATCH] net: stmmac: dwmac-meson8b: drop the link before power-off
+
+The glue driver has no shutdown callback, so the MAC and the PHY are
+left running with the RGMII link up until the SoC rails collapse when
+the system powers off. On boards where cutting the power while the
+link is still established releases a transient on the wire, this can
+wedge the link partner: on a Phicomm T1 (Amlogic S912) powering the
+board off repeatedly left an upstream router in a state where
+its WAN (PPPoE) path stayed dead until the link was re-established
+(unplugging the cable was enough to recover it).
+
+Bring the interface down while the clocks are still running - the
+in-kernel equivalent of "ip link set <dev> down". This stops the
+queues, halts the DMA engine and shuts the PHY down before the power
+is removed, which makes the power-off harmless. A 5 second grace
+period is kept before returning, mirroring the "link down, wait,
+power off" sequence that was verified to be safe on the affected
+board.
+
+Signed-off-by: T1 Kernel Patch Work <patch@local>
+---
+ .../ethernet/stmicro/stmmac/dwmac-meson8b.c   | 39 +++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+index 92cd78bcc..561ad06ef 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-meson8b.c
+@@ -8,15 +8,18 @@
+ #include <linux/bitfield.h>
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/delay.h>
+ #include <linux/device.h>
+ #include <linux/ethtool.h>
+ #include <linux/io.h>
+ #include <linux/ioport.h>
+ #include <linux/module.h>
++#include <linux/netdevice.h>
+ #include <linux/of.h>
+ #include <linux/of_net.h>
+ #include <linux/mfd/syscon.h>
+ #include <linux/platform_device.h>
++#include <linux/rtnetlink.h>
+ #include <linux/stmmac.h>
+ 
+ #include "stmmac_platform.h"
+@@ -503,6 +506,41 @@ static int meson8b_dwmac_probe(struct platform_device *pdev)
+ 	return stmmac_dvr_probe(&pdev->dev, plat_dat, &stmmac_res);
+ }
+ 
++/**
++ * meson8b_dwmac_shutdown - drop the RGMII link before the system powers off
++ * @pdev: platform device
++ *
++ * There is no callback that quiesces the MAC and the PHY during power-off,
++ * so the link stays up until the SoC rails collapse. On the Phicomm T1
++ * (Amlogic S912) the abrupt power cut with an established link releases a
++ * transient on the wire that wedges the link partner (observed with an
++ * upstream router, whose WAN path stayed dead until the link was
++ * re-established).
++ *
++ * Bring the interface down while the clocks are still running (the
++ * in-kernel equivalent of "ip link set eth0 down"): this stops the queues,
++ * halts the DMA engine and shuts the PHY down. Then wait for a short
++ * grace period before the power is removed.
++ */
++static void meson8b_dwmac_shutdown(struct platform_device *pdev)
++{
++	struct net_device *ndev = platform_get_drvdata(pdev);
++
++	if (!ndev || !netif_running(ndev))
++		return;
++
++	netdev_info(ndev, "shutdown: bringing the link down before power-off\n");
++
++	rtnl_lock();
++	dev_close(ndev);
++	rtnl_unlock();
++
++	/* Grace period mirroring the verified "link down, wait 5 seconds,
++	 * then power off" recovery sequence.
++	 */
++	msleep(5000);
++}
++
+ static const struct meson8b_dwmac_data meson8b_dwmac_data = {
+ 	.set_phy_mode = meson8b_set_phy_mode,
+ 	.has_prg_eth1_rgmii_rx_delay = false,
+@@ -546,6 +584,7 @@ MODULE_DEVICE_TABLE(of, meson8b_dwmac_match);
+ static struct platform_driver meson8b_dwmac_driver = {
+ 	.probe  = meson8b_dwmac_probe,
+ 	.remove_new = stmmac_pltfr_remove,
++	.shutdown = meson8b_dwmac_shutdown,
+ 	.driver = {
+ 		.name           = "meson8b-dwmac",
+ 		.pm		= &stmmac_pltfr_pm_ops,
+-- 
+2.54.0 (Apple Git-157)
+

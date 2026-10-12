@@ -1,0 +1,16 @@
+#!/bin/sh
+# pre-commit —— 提交前扫描暂存内容（受保护模式 / 结构卫生）
+# 规则以哈希形式存于 .githooks/patterns.sha256（原文不入库）
+set -e
+cd "$(git rev-parse --show-toplevel)"
+
+PY=""
+for c in python3 python3.13 python; do
+  if command -v "$c" >/dev/null 2>&1; then PY="$c"; break; fi
+done
+if [ -z "$PY" ]; then
+  echo "pre-commit: 未找到 python3，拒绝提交（fail-closed）" >&2
+  exit 1
+fi
+
+exec "$PY" .githooks/leak_scan.py --staged

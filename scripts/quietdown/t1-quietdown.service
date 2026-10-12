@@ -1,0 +1,22 @@
+# /etc/systemd/system/t1-quietdown.service
+# T1 关机前 quiet-down 钩子（关机链路异常修复）
+# 模式参考 armbian-ramlog.service（同样需要在关机停止阶段早期执行）：
+#   oneshot + RemainAfterExit=yes + Conflicts=shutdown.target + ExecStop
+# 行为：开机时占位（ExecStart=/bin/true）；
+#       关机/重启时服务被停止 → ExecStop 放下 eth0（脚本见 t1-quietdown.sh）。
+[Unit]
+Description=t1-quietdown: drop eth0 before shutdown (poison mitigation)
+DefaultDependencies=no
+Before=shutdown.target
+Conflicts=shutdown.target
+IgnoreOnIsolate=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/root/remote-hub/t1-quietdown.sh
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

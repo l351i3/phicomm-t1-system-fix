@@ -1,0 +1,4 @@
+#!/bin/sh
+# K99zzproof: 关机链执行取证钩子（一次性测试用；测毕可删）
+# 放在 /etc/rc.d/ 内：若 procd 关机时执行 K 链，本脚本会被调用并写记录
+echo "$(date '+%F %T') K-chain reached (K99zzproof)" >> /root/shutdown-proof.log

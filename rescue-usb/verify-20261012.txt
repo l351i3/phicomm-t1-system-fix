@@ -1,0 +1,196 @@
+===== [A] 刷新后静态复验（脚本外，17:00） =====
+===== [1] refresh.log tail =====
+[2026-10-12 16:54:25] unmounting /dev/sda* ...
+[2026-10-12 16:54:26] syncing rootfs (takes a few minutes) ...
+[2026-10-12 16:55:39] updating boot content ...
+[2026-10-12 16:55:48] verifying ...
+[2026-10-12 16:55:49] sample file counts (source vs usb):
+    /etc: 1589 vs 1589
+    /usr: 50266 vs 50266
+    /opt: 3231 vs 3231
+    /root: 246 vs 246
+    /var/lib: 2567 vs 2567
+[2026-10-12 16:56:03] DONE. Rescue USB refreshed to the current system.
+[2026-10-12 16:56:03] Test: keep it inserted and reboot the T1 -> should boot from USB.
+[2026-10-12 16:56:03]       Remove it and reboot -> boots from eMMC as usual.
+
+===== [2] block devices =====
+NAME           SIZE TYPE FSTYPE LABEL       UUID                                 TRAN MOUNTPOINT
+sda           28.6G disk                                                         usb  
+├─sda1         511M part vfat   BOOT        36AD-BCF6                                 
+└─sda2        28.1G part ext4   ROOTFS      88e4250c-7462-43f5-bb12-525a6e5b2b7c      
+mmcblk2       14.6G disk                                                              
+├─mmcblk2p1    511M part vfat   BOOT_EMMC   CF03-1808                                 /boot
+└─mmcblk2p2   13.8G part ext4   ROOTFS_EMMC d6082f8e-e012-4fdd-834e-76dc3a2ecaea      /
+mmcblk2boot0     4M disk                                                              
+mmcblk2boot1     4M disk                                                              
+zram0        896.5M disk                                                              [SWAP]
+zram1           50M disk                                                              /var/log
+zram2            0B disk                                                              
+
+===== [3] USB identity by UUID =====
+ROOTDEV=/dev/sda2 BOOTDEV=/dev/sda1
+
+===== [4] read-only mount + contents =====
+mounted /dev/sda1 -> /mnt/vb
+mounted /dev/sda2 -> /mnt/vr
+
+--- uEnv.txt (USB boot partition) ---
+LINUX=/zImage
+INITRD=/uInitrd
+FDT=/dtb/amlogic/meson-gxm-phicomm-t1-nott.dtb
+APPEND=root=UUID=88e4250c-7462-43f5-bb12-525a6e5b2b7c rootflags=data=writeback rw rootwait rootfstype=ext4 console=ttyAML0,115200n8 console=tty0 no_console_suspend consoleblank=0 fsck.fix=yes fsck.repair=yes net.ifnames=0 max_loop=128 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory swapaccount=1
+
+--- fstab (USB rootfs) ---
+UUID=88e4250c-7462-43f5-bb12-525a6e5b2b7c    /        ext4    defaults,noatime,nodiratime,commit=600,errors=remount-ro      0 1
+LABEL=BOOT        /boot    vfat                   defaults                   0 2
+tmpfs                  /tmp     tmpfs                  defaults,nosuid            0 0
+
+
+--- boot.cmd (USB) ---
+echo "Start AMLOGIC mainline U-boot"
+if printenv bootfromsd; then exit; fi;
+setenv loadaddr "0x44000000"
+setenv l_mmc "0 1 2 3"
+for devtype in "usb mmc" ; do
+	if test "${devtype}" = "mmc"; then
+		setenv l_mmc "1"
+	fi 
+	for devnum in ${l_mmc} ; do
+		if test -e ${devtype} ${devnum} uEnv.txt; then
+			load ${devtype} ${devnum} ${loadaddr} uEnv.txt
+			env import -t ${loadaddr} ${filesize}
+			setenv bootargs ${APPEND}
+			if printenv mac; then
+				setenv bootargs ${bootargs} mac=${mac}
+			elif printenv eth_mac; then
+				setenv bootargs ${bootargs} mac=${eth_mac}
+			elif printenv ethaddr; then
+				setenv bootargs ${bootargs} mac=${ethaddr}
+			fi
+			if load ${devtype} ${devnum} ${kernel_addr_r} ${LINUX}; then
+				if load ${devtype} ${devnum} ${ramdisk_addr_r} ${INITRD}; then
+					if load ${devtype} ${devnum} ${fdt_addr_r} ${FDT}; then
+						fdt addr ${fdt_addr_r}
+						booti ${kernel_addr_r} ${ramdisk_addr_r} ${fdt_addr_r}
+					fi
+				fi
+			fi
+		fi
+	done
+done
+# Recompile with:
+# mkimage -C none -A arm -T script -d /boot/boot.cmd /boot/boot.scr
+
+--- boot.ini (USB) ---
+ODROIDN2-UBOOT-CONFIG
+
+# set load addresses
+setenv env_addr 0x10400000
+setenv kernel_addr 0x11000000
+setenv initrd_addr 0x15000000
+setenv dtb_addr 0x1000000
+
+if test "${devtype}" = ""; then setenv devtype "mmc"; fi
+
+# load uEnv.txt
+load ${devtype} ${devnum} ${env_addr} uEnv.txt && env import -t ${env_addr} ${filesize}
+setenv bootargs ${APPEND}
+
+# Load kernel, dtb
+load ${devtype} ${devnum} ${kernel_addr} ${LINUX}
+load ${devtype} ${devnum} ${initrd_addr} ${INITRD}
+load ${devtype} ${devnum} ${dtb_addr} ${FDT}
+fdt addr ${dtb_addr}
+
+# boot
+booti ${kernel_addr} ${initrd_addr} ${dtb_addr}
+
+===== [5] kernel hash compare (USB vs eMMC) =====
+32aef84a2f516cde71e94237286f29b094bcad17c7f76039a6722a62b18962a8  /mnt/vb/zImage
+32aef84a2f516cde71e94237286f29b094bcad17c7f76039a6722a62b18962a8  /boot/zImage
+73c640bb91dadb5753aefb1b1037acaa92f932910bcd67e59b5e32bdc82f42de  /mnt/vb/uInitrd
+73c640bb91dadb5753aefb1b1037acaa92f932910bcd67e59b5e32bdc82f42de  /boot/uInitrd
+
+===== [6] dtb files =====
+-rwxr-xr-x 1 root root 42083 2026年 1月15日 meson-gxl-s905d-phicomm-n1.dtb
+-rwxr-xr-x 1 root root 42122 2026年 1月15日 meson-gxl-s905d-phicomm-n1-thresh.dtb
+-rwxr-xr-x 1 root root 42041 10月12日 16:55 meson-gxm-phicomm-t1-bt4354-115200.dtb
+-rwxr-xr-x 1 root root 42041 10月12日 16:55 meson-gxm-phicomm-t1-bt4354.dtb
+-rwxr-xr-x 1 root root 42041 10月12日 16:55 meson-gxm-phicomm-t1.dtb
+-rwxr-xr-x 1 root root 42013 10月12日 16:55 meson-gxm-phicomm-t1-norts.dtb
+-rwxr-xr-x 1 root root 41934 10月12日 16:55 meson-gxm-phicomm-t1-nott.dtb
+usb boot files=51  emmc /boot files=45
+
+===== [7] first-run + macOS junk =====
+armbian_first_run.txt.done
+armbian_first_run.txt.template
+(no macOS junk)
+
+===== [8] boot layer untouched vs backup =====
+boot.ini: SAME (untouched)
+boot.scr: SAME (untouched)
+boot.cmd: SAME (untouched)
+
+===== DONE =====
+
+===== [B] 插盘重启实测（U 盘引导）复核快照 2026-10-12 17:05:43 =====
+cmdline: root=UUID=88e4250c-7462-43f5-bb12-525a6e5b2b7c rootflags=data=writeback rw rootwait rootfstype=ext4 console=ttyAML0,115200n8 console=tty0 no_console_suspend consoleblank=0 fsck.fix=yes fsck.repair=yes net.ifnames=0 max_loop=128 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory swapaccount=1 mac=FC:7C:02:XX:XX:XX
+root:  /dev/sda2 ext4   ROOTFS
+boot:  /dev/sda1 vfat   BOOT
+
+NAME           SIZE FSTYPE LABEL       MOUNTPOINT
+sda           28.6G                    
+├─sda1         511M vfat   BOOT        /boot
+└─sda2        28.1G ext4   ROOTFS      /
+mmcblk2       14.6G                    
+├─mmcblk2p1    511M vfat   BOOT_EMMC   
+└─mmcblk2p2   13.8G ext4   ROOTFS_EMMC 
+mmcblk2boot0     4M                    
+mmcblk2boot1     4M                    
+zram0        896.5M                    [SWAP]
+zram1           50M                    /var/log
+zram2            0B                    
+
+bluetooth        active
+t1bt-bluetooth   active
+t1-evwatch       active
+t1-voice-fwd     active
+t1-atvv          active
+t1-relay         active
+t1-webui         active
+
+eth0             UP             T1_IP/24 
+tailscale0       UNKNOWN        TAILSCALE_IP/32 
+
+ 17:05:47 up 4 min,  0 user,  load average: 0.38, 0.45, 0.24
+
+===== [C] 拔盘重启实测（回 eMMC）快照 =====
+[auto-detect] T1 back at 2026-10-12 17:21:13; snapshot:
+cmdline: root=UUID=d6082f8e-e012-4fdd-834e-76dc3a2ecaea rootflags=data=writeback rw rootfstype=ext4 console=ttyAML0,115200n8 console=tty0 no_console_suspend consoleblank=0 fsck.fix=yes fsck.repair=yes net.ifnames=0 max_loop=128 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory swapaccount=1 mac=FC:7C:02:XX:XX:XX
+root:  /dev/mmcblk2p2 ext4   ROOTFS_EMMC
+boot:  /dev/mmcblk2p1 vfat   BOOT_EMMC
+
+NAME           SIZE FSTYPE LABEL       MOUNTPOINT
+mmcblk2       14.6G                    
+├─mmcblk2p1    511M vfat   BOOT_EMMC   /boot
+└─mmcblk2p2   13.8G ext4   ROOTFS_EMMC /
+mmcblk2boot0     4M                    
+mmcblk2boot1     4M                    
+zram0        896.5M                    [SWAP]
+zram1           50M                    /var/log
+zram2            0B                    
+
+bluetooth        active
+t1bt-bluetooth   active
+t1-evwatch       active
+t1-voice-fwd     active
+t1-atvv          active
+t1-relay         active
+t1-webui         active
+
+eth0             UP             T1_IP/24 
+tailscale0       UNKNOWN        TAILSCALE_IP/32 
+
+ 17:01:07 up 0 min,  0 user,  load average: 1.31, 0.31, 0.10
+=== end snapshot ===

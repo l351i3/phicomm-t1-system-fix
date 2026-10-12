@@ -1,0 +1,116 @@
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
+08:39:58.550113 IP T1_IP.6665 > LAN_IP.6666: UDP, length 51
+E..O....@..:.........	.
+.;O.[   58.777416] netconsole: network logging started
+
+08:39:58.565460 IP T1_IP.6665 > LAN_IP.6666: UDP, length 51
+E..O....@..9.........	.
+.;..[   58.791978] NETCONSOLE-TEST7-FINAL t=1791506398
+
+08:40:23.011892 IP T1_IP.6665 > LAN_IP.6666: UDP, length 92
+E..x....@............	.
+.d..[   83.229588] EXT4-fs (zram1): unmounting filesystem 9320a988-2ca6-486c-838c-5789a1a2c57e.
+
+08:40:23.420097 IP T1_IP.6665 > LAN_IP.6666: UDP, length 59
+E..W....@../.........	.
+.C?+[   83.645991] watchdog: watchdog0: watchdog did not stop!
+
+08:40:23.460144 IP T1_IP.6665 > LAN_IP.6666: UDP, length 116
+E.......@............	.
+.|..[   83.683735] systemd-shutdown[1]: Using hardware watchdog 'Meson GXBB Watchdog', version 0, device /dev/watchdog0
+
+08:40:23.467074 IP T1_IP.6665 > LAN_IP.6666: UDP, length 87
+E..s....@............	.
+._..[   83.693631] systemd-shutdown[1]: Watchdog running with a hardware timeout of 10min.
+
+08:40:23.494681 IP T1_IP.6665 > LAN_IP.6666: UDP, length 75
+E..g....@............	.
+.S.}[   83.721367] systemd-shutdown[1]: Syncing filesystems and block devices.
+
+08:40:23.499432 IP T1_IP.6665 > LAN_IP.6666: UDP, length 78
+E..j....@............	.
+.V..[   83.726125] systemd-shutdown[1]: Sending SIGTERM to remaining processes...
+
+08:40:23.527421 IP T1_IP.6665 > LAN_IP.6666: UDP, length 85
+E..q.	..@............	.
+.]C.[   83.752627] systemd-journald[792]: Received SIGTERM from PID 1 (systemd-shutdow).
+
+08:40:23.555656 IP T1_IP.6665 > LAN_IP.6666: UDP, length 78
+E..j.
+..@............	.
+.V..[   83.782985] systemd-shutdown[1]: Sending SIGKILL to remaining processes...
+
+08:40:23.578979 IP T1_IP.6665 > LAN_IP.6666: UDP, length 61
+E..Y....@..&.........	.
+.E*.[   83.806503] systemd-shutdown[1]: Unmounting file systems.
+
+08:40:23.587938 IP T1_IP.6665 > LAN_IP.6666: UDP, length 120
+E.......@............	.
+...?[   83.811882] (sd-remount)[3292]: Remounting '/' read-only with options 'errors=remount-ro,commit=600,data=writeback'.
+
+08:40:23.624563 IP T1_IP.6665 > LAN_IP.6666: UDP, length 88
+E..t....@..	.........	.
+.`..[   83.850940] EXT4-fs (mmcblk2p2): re-mounted d6082f8e-e012-4fdd-834e-76dc3a2ecaea ro.
+
+08:40:23.646007 IP T1_IP.6665 > LAN_IP.6666: UDP, length 63
+E..[....@..!.........	.
+.G{q[   83.872980] systemd-shutdown[1]: All filesystems unmounted.
+
+08:40:23.647815 IP T1_IP.6665 > LAN_IP.6666: UDP, length 56
+E..T....@..'.........	.
+.@J.[   83.875308] systemd-shutdown[1]: Deactivating swaps.
+
+08:40:23.652754 IP T1_IP.6665 > LAN_IP.6666: UDP, length 59
+E..W....@..#.........	.
+.Cn|[   83.880324] systemd-shutdown[1]: All swaps deactivated.
+
+08:40:23.657673 IP T1_IP.6665 > LAN_IP.6666: UDP, length 60
+E..X....@..!.........	.
+.D..[   83.885313] systemd-shutdown[1]: Detaching loop devices.
+
+08:40:23.694932 IP T1_IP.6665 > LAN_IP.6666: UDP, length 63
+E..[....@............	.
+.G`9[   83.922494] systemd-shutdown[1]: All loop devices detached.
+
+08:40:23.696697 IP T1_IP.6665 > LAN_IP.6666: UDP, length 57
+E..U....@..".........	.
+.A:.[   83.924335] systemd-shutdown[1]: Stopping MD devices.
+
+08:40:23.702398 IP T1_IP.6665 > LAN_IP.6666: UDP, length 60
+E..X....@............	.
+.D..[   83.929981] systemd-shutdown[1]: All MD devices stopped.
+
+08:40:23.707508 IP T1_IP.6665 > LAN_IP.6666: UDP, length 58
+E..V....@............	.
+.BFp[   83.934514] systemd-shutdown[1]: Detaching DM devices.
+
+08:40:23.712875 IP T1_IP.6665 > LAN_IP.6666: UDP, length 61
+E..Y....@............	.
+.E..[   83.940280] systemd-shutdown[1]: All DM devices detached.
+
+08:40:23.719369 IP T1_IP.6665 > LAN_IP.6666: UDP, length 110
+E.......@............	.
+.v..[   83.944935] systemd-shutdown[1]: All filesystems, swaps, loop devices, MD devices and DM devices detached.
+
+08:40:23.727378 IP T1_IP.6665 > LAN_IP.6666: UDP, length 59
+E..W....@............	.
+.C</[   83.954537] watchdog: watchdog0: watchdog did not stop!
+
+08:40:23.741880 IP T1_IP.6665 > LAN_IP.6666: UDP, length 75
+E..g....@..
+.........	.
+.S.r[   83.969170] systemd-shutdown[1]: Syncing filesystems and block devices.
+
+08:40:23.745107 IP T1_IP.6665 > LAN_IP.6666: UDP, length 47
+E..K....@..%.........	.
+.7.`[   83.972394] systemd-shutdown[1]: Rebooting.
+
+08:40:23.794171 IP T1_IP.6665 > LAN_IP.6666: UDP, length 103
+E.......@............	.
+.o..[   84.017087] meson8b-dwmac c9410000.ethernet eth0: shutdown: bringing the link down before power-off
+
+
+27 packets captured
+27 packets received by filter
+0 packets dropped by kernel
